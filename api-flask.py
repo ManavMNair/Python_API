@@ -6,12 +6,17 @@ import re
 
 
 app = Flask(__name__)
+@app.route('/', methods=['GET'])
+def index():
+    return 'hello'
 
 
 @app.route('/get-summary', methods=['POST'])
 
 def get_video_id():
-    youtube_video = request.json.get('youtube_video')
+    youtube_video = request.args.get('id')
+    print(youtube_video)
+    
     if '=' in youtube_video:
         video_id = youtube_video.split("=")[1]
         print("video id ="+video_id)
@@ -19,12 +24,12 @@ def get_video_id():
         return (Final_summary)
     else:
         return jsonify(error='Invalid YouTube URL')  
-
+language_code = ["en-US","en","en-UK"]
 
 def get_summary(video_id,youtube_video):
     
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=language_code)
         if transcript:
               # ===============If transcript of the video available ============
             print("Transcript fetched successfully") 
@@ -48,12 +53,14 @@ def get_summary(video_id,youtube_video):
                 out = summarizer(result[start:end], max_length=max_length)
                 out = out[0]
                 out = out['summary_text']
-                percentage = (((i+1)/num_iters)*100)
+                percentage = (((i+1)/(num_iters+1))*100)
                 print("Summarized "+str(percentage) +"%")
                 summarized_text.append(out)
 
                 summary=str(summarized_text)
-                cleaned_summary = re.sub(r'[\"]', '', summary)
+                cleaned_summary = re.sub(r'[\[\]\'"]', '', summary)
+
+                print(jsonify(summary=cleaned_summary))
             return jsonify(summary=cleaned_summary)
         else:  # ========================if transcript not available====================
             from pytube import YouTube
